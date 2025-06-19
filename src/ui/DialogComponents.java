@@ -2291,539 +2291,541 @@ public class DialogComponents {
     }
 
     public static JPanel getLabSchedulePanel() {
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        // Create a simple panel with a button to open the dialog
+        JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(Color.WHITE);
 
-        JLabel titleLabel = new JLabel("Lab Schedule");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        mainPanel.add(titleLabel);
-        mainPanel.add(Box.createVerticalStrut(20));
+        JPanel centerPanel = new JPanel(new FlowLayout());
+        centerPanel.setBackground(Color.WHITE);
 
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        filterPanel.add(new JLabel("Filter by:"));
-        JComboBox<String> labCombo = new JComboBox<>(new String[]{"All Labs", "Lab A", "Lab B", "Lab C", "Lab D"});
-        filterPanel.add(labCombo);
-        JComboBox<String> dateCombo = new JComboBox<>(new String[]{"Today", "This Week", "This Month", "Custom Date"});
-        filterPanel.add(dateCombo);
-        JButton refreshButton = createStyledButton("Refresh");
-        filterPanel.add(refreshButton);
-        mainPanel.add(filterPanel);
+        JButton openDialogButton = createStyledButton("Open Lab Schedule");
+        openDialogButton.setPreferredSize(new Dimension(200, 40));
+        openDialogButton.addActionListener(e -> {
+            showLabScheduleDialog(SwingUtilities.getWindowAncestor(mainPanel));
+        });
+
+        centerPanel.add(openDialogButton);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    public static void showLabScheduleDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Lab Schedule", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Lab Schedule");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
         mainPanel.add(Box.createVerticalStrut(15));
 
         // Use database-connected table model
         DatabaseTableModel reservationTableModel = DatabaseTableModel.getLabReservationTableModel();
         JTable scheduleTable = new JTable(reservationTableModel);
 
-        // Configure table for better display
+        // Simple table configuration matching dashboard theme
         scheduleTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         scheduleTable.setRowHeight(25);
         scheduleTable.setAutoCreateRowSorter(true);
         scheduleTable.setFillsViewportHeight(true);
 
-        // Register with both managers for comprehensive data management
+        // Register table for data management
         TableRefreshManager.getInstance().registerTable("lab_reservations", scheduleTable, reservationTableModel);
         JPanelDataManager.getInstance().registerPanel("lab_schedule", mainPanel, reservationTableModel, scheduleTable);
 
         JScrollPane scrollPane = new JScrollPane(scheduleTable);
-        scrollPane.setPreferredSize(new Dimension(800, 400));
-        mainPanel.add(scrollPane);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Ensure data is properly loaded and displayed
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("lab_schedule");
+        });
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
         SwingUtilities.invokeLater(() -> {
-            System.out.println("🔄 Ensuring lab schedule data is loaded and displayed...");
             JPanelDataManager.getInstance().ensurePanelDataLoaded("lab_schedule");
         });
-        mainPanel.add(Box.createVerticalStrut(15));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton reserveButton = createStyledButton("New Reservation");
-        buttonPanel.add(reserveButton);
-        JButton printButton = createStyledButton("Print Schedule");
-        buttonPanel.add(printButton);
-        mainPanel.add(buttonPanel);
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
 
-        reserveButton.addActionListener(e -> {
-            showLabReservationDialog(SwingUtilities.getWindowAncestor(mainPanel));
-        });
-        printButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(mainPanel, "Schedule sent to printer");
-        });
-        refreshButton.addActionListener(e -> {
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    // Refresh the lab reservation data
-                    reservationTableModel.refreshData();
-                    TableRefreshManager.getInstance().refreshTable("lab_reservations");
-                    JOptionPane.showMessageDialog(mainPanel, "Lab schedule refreshed successfully!",
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(mainPanel, "Error refreshing data: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            });
-        });
+    // Helper method to create a simple panel with a button that opens a dialog
+    private static JPanel createDialogPanel(String buttonText, Runnable dialogAction) {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        JPanel centerPanel = new JPanel(new FlowLayout());
+        centerPanel.setBackground(Color.WHITE);
+
+        JButton openDialogButton = createStyledButton(buttonText);
+        openDialogButton.setPreferredSize(new Dimension(200, 40));
+        openDialogButton.addActionListener(e -> dialogAction.run());
+
+        centerPanel.add(openDialogButton);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
 
         return mainPanel;
     }
 
     public static JPanel getComplaintTrackingPanel() {
-        System.out.println("🖥️ Creating Complaint Tracking Panel...");
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-
-        JLabel titleLabel = new JLabel("Complaint Tracking");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Create database-connected table model
-        System.out.println("📊 Creating complaint table model...");
-        DatabaseTableModel tableModel = DatabaseTableModel.getComplaintTableModel();
-        System.out.println("📋 Complaint table model created with " + tableModel.getRowCount() + " rows");
-
-        JTable table = new JTable(tableModel);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
-        table.setAutoCreateRowSorter(true);
-        table.setFillsViewportHeight(true);
-
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("complaints", table, tableModel);
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(800, 400));
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-
-        // Force immediate data refresh to ensure visibility
-        SwingUtilities.invokeLater(() -> {
-            System.out.println("🔄 Force refreshing complaint data for UI display...");
-            tableModel.forceRefresh();
-            table.revalidate();
-            table.repaint();
-            System.out.println("📊 Complaint table now has " + tableModel.getRowCount() + " rows");
-        });
-
-        // Add button panel for actions
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-
-        JButton refreshButton = createStyledButton("Refresh");
-        refreshButton.addActionListener(e -> {
-            tableModel.refreshData();
-            JOptionPane.showMessageDialog(mainPanel, "Complaint data refreshed!", "Success", JOptionPane.INFORMATION_MESSAGE);
-        });
-
-        JButton updateStatusButton = createStyledButton("Update Status");
-        updateStatusButton.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                String computerId = table.getValueAt(selectedRow, 1).toString(); // Computer ID column
-                Window window = SwingUtilities.getWindowAncestor(mainPanel);
-                if (window instanceof Frame) {
-                    showUpdateComplaintStatusDialog((Frame) window, computerId);
-                } else {
-                    JOptionPane.showMessageDialog(mainPanel, "Update status functionality is available in the main dashboard.");
+        return createDialogPanel("Open Complaint Tracking", () -> {
+            // Find the parent window from the current context
+            Window parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive()) {
+                    parent = window;
+                    break;
                 }
-            } else {
-                JOptionPane.showMessageDialog(mainPanel, "Please select a complaint to update.", "No Selection", JOptionPane.WARNING_MESSAGE);
             }
+            showComplaintTrackingDialog(parent);
         });
-
-        buttonPanel.add(refreshButton);
-        buttonPanel.add(updateStatusButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return mainPanel;
     }
 
-    public static JPanel getComputerInventoryPanel() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    public static void showComplaintTrackingDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Complaint Tracking", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
 
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        filterPanel.add(new JLabel("Filter by:"));
-
-        // Create dynamic lab filter from database
-        JComboBox<String> labFilter = new JComboBox<>();
-        labFilter.addItem("All Labs");
-        // Populate labs from database
-        try {
-            DatabaseTableModel labModel = DatabaseTableModel.getLabTableModel();
-            for (int i = 0; i < labModel.getRowCount(); i++) {
-                String labName = labModel.getValueAt(i, 1).toString(); // Lab name column
-                labFilter.addItem(labName);
-            }
-        } catch (Exception e) {
-            // Fallback if database is not available
-            labFilter.addItem("Lab 1");
-            labFilter.addItem("Lab 2");
-        }
-        filterPanel.add(labFilter);
-
-        // Create dynamic status filter
-        JComboBox<String> statusFilter = new JComboBox<>(new String[]{"All Statuses", "Available", "In Use", "Maintenance", "Retired"});
-        filterPanel.add(statusFilter);
-
-        JButton refreshButton = createStyledButton("Refresh");
-        refreshButton.addActionListener(e -> {
-            // Get the computer table model and refresh it
-            DatabaseTableModel computerModel = DatabaseTableModel.getComputerTableModel();
-            computerModel.refreshData();
-            JOptionPane.showMessageDialog(mainPanel, "Inventory data refreshed!");
-        });
-        filterPanel.add(refreshButton);
-
-        JButton exportButton = new JButton("Export to CSV");
-        exportButton.addActionListener(e -> JOptionPane.showMessageDialog(mainPanel, "Export functionality would be implemented here"));
-        filterPanel.add(exportButton);
-        mainPanel.add(filterPanel, BorderLayout.NORTH);
-
-        // Use database-connected table model
-        DatabaseTableModel computerTableModel = DatabaseTableModel.getComputerTableModel();
-        JTable inventoryTable = new JTable(computerTableModel);
-
-        // Configure table for better display
-        inventoryTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        inventoryTable.setRowHeight(25);
-        inventoryTable.setAutoCreateRowSorter(true);
-        inventoryTable.setFillsViewportHeight(true);
-
-        // Register with both managers for comprehensive data management
-        TableRefreshManager.getInstance().registerTable("computers", inventoryTable, computerTableModel);
-        JPanelDataManager.getInstance().registerPanel("computer_inventory", mainPanel, computerTableModel, inventoryTable);
-
-        JScrollPane scrollPane = new JScrollPane(inventoryTable);
-        scrollPane.setPreferredSize(new Dimension(800, 400));
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-
-        // Ensure data is properly loaded and displayed
-        SwingUtilities.invokeLater(() -> {
-            System.out.println("🔄 Ensuring computer inventory data is loaded and displayed...");
-            JPanelDataManager.getInstance().ensurePanelDataLoaded("computer_inventory");
-        });
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton addButton = createStyledButton("Add New Computer");
-        addButton.addActionListener(e -> showAddComputerDialog(SwingUtilities.getWindowAncestor(mainPanel)));
-        JButton editButton = createStyledButton("Edit Selected");
-        editButton.addActionListener(e -> showEditComputerDialog(SwingUtilities.getWindowAncestor(mainPanel), inventoryTable));
-        JButton maintenanceButton = createStyledButton("Record Maintenance");
-        maintenanceButton.addActionListener(e -> showRecordMaintenanceDialog(SwingUtilities.getWindowAncestor(mainPanel), inventoryTable));
-        actionPanel.add(addButton);
-        actionPanel.add(editButton);
-        actionPanel.add(maintenanceButton);
-        mainPanel.add(actionPanel, BorderLayout.SOUTH);
-        return mainPanel;
-    }
-
-    public static JPanel getSoftwareManagementPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(Color.WHITE);
-        // Use database-connected table model
-        DatabaseTableModel softwareTableModel = DatabaseTableModel.getSoftwareRequestTableModel();
-        JTable table = new JTable(softwareTableModel);
 
-        // Configure table for better display
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Complaint Tracking");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Use database-connected table model
+        DatabaseTableModel tableModel = DatabaseTableModel.getComplaintTableModel();
+        JTable table = new JTable(tableModel);
+
+        // Simple table configuration matching dashboard theme
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         table.setRowHeight(25);
         table.setAutoCreateRowSorter(true);
         table.setFillsViewportHeight(true);
 
-        // Register with both managers for comprehensive data management
+        // Register table for data management
+        TableRefreshManager.getInstance().registerTable("complaints", table, tableModel);
+        JPanelDataManager.getInstance().registerPanel("complaint_tracking", mainPanel, tableModel, table);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("complaint_tracking");
+        });
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
+        SwingUtilities.invokeLater(() -> {
+            JPanelDataManager.getInstance().ensurePanelDataLoaded("complaint_tracking");
+        });
+
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
+
+    public static JPanel getComputerInventoryPanel() {
+        // Create a simple panel with a button to open the dialog
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        JPanel centerPanel = new JPanel(new FlowLayout());
+        centerPanel.setBackground(Color.WHITE);
+
+        JButton openDialogButton = createStyledButton("Open Computer Inventory");
+        openDialogButton.setPreferredSize(new Dimension(200, 40));
+        openDialogButton.addActionListener(e -> {
+            showComputerInventoryDialog(SwingUtilities.getWindowAncestor(mainPanel));
+        });
+
+        centerPanel.add(openDialogButton);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    public static void showComputerInventoryDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Computer Inventory", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Computer Inventory");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Use database-connected table model
+        DatabaseTableModel computerTableModel = DatabaseTableModel.getComputerTableModel();
+        JTable inventoryTable = new JTable(computerTableModel);
+
+        // Simple table configuration matching dashboard theme
+        inventoryTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        inventoryTable.setRowHeight(25);
+        inventoryTable.setAutoCreateRowSorter(true);
+        inventoryTable.setFillsViewportHeight(true);
+
+        // Register table for data management
+        TableRefreshManager.getInstance().registerTable("computers", inventoryTable, computerTableModel);
+        JPanelDataManager.getInstance().registerPanel("computer_inventory", mainPanel, computerTableModel, inventoryTable);
+
+        JScrollPane scrollPane = new JScrollPane(inventoryTable);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("computer_inventory");
+        });
+        JButton addButton = createStyledButton("Add Computer");
+        addButton.addActionListener(e -> showAddComputerDialog(dialog));
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(addButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
+        SwingUtilities.invokeLater(() -> {
+            JPanelDataManager.getInstance().ensurePanelDataLoaded("computer_inventory");
+        });
+
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
+
+    public static JPanel getSoftwareManagementPanel() {
+        // Create a simple panel with a button to open the dialog
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        JPanel centerPanel = new JPanel(new FlowLayout());
+        centerPanel.setBackground(Color.WHITE);
+
+        JButton openDialogButton = createStyledButton("Open Software Management");
+        openDialogButton.setPreferredSize(new Dimension(200, 40));
+        openDialogButton.addActionListener(e -> {
+            showSoftwareManagementDialog(SwingUtilities.getWindowAncestor(mainPanel));
+        });
+
+        centerPanel.add(openDialogButton);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    public static void showSoftwareManagementDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Software Management", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Software Management");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Use database-connected table model
+        DatabaseTableModel softwareTableModel = DatabaseTableModel.getSoftwareRequestTableModel();
+        JTable table = new JTable(softwareTableModel);
+
+        // Simple table configuration matching dashboard theme
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
+
+        // Register table for data management
         TableRefreshManager.getInstance().registerTable("software_requests", table, softwareTableModel);
         JPanelDataManager.getInstance().registerPanel("software_management", mainPanel, softwareTableModel, table);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(800, 400));
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Ensure data is properly loaded and displayed
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("software_management");
+        });
+        JButton addButton = createStyledButton("Add Software");
+        addButton.addActionListener(e -> showAddSoftwareDialog(dialog));
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(addButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
         SwingUtilities.invokeLater(() -> {
-            System.out.println("🔄 Ensuring software request data is loaded and displayed...");
             JPanelDataManager.getInstance().ensurePanelDataLoaded("software_management");
         });
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        JButton addSoftwareButton = createStyledButton("Add Software");
-        JButton viewButton = createStyledButton("View Details");
-        JButton updateStatusButton = createStyledButton("Update Status");
-
-        addSoftwareButton.addActionListener(e -> showAddSoftwareDialog(SwingUtilities.getWindowAncestor(mainPanel)));
-        viewButton.addActionListener(e -> showViewSoftwareDetailsDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        updateStatusButton.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                String requestId = table.getValueAt(selectedRow, 0).toString();
-                showUpdateSoftwareStatusDialog((JDialog) SwingUtilities.getWindowAncestor(mainPanel), requestId);
-            } else {
-                JOptionPane.showMessageDialog(mainPanel, "Please select a software request to update.");
-            }
-        });
-
-        buttonPanel.add(addSoftwareButton);
-        buttonPanel.add(viewButton);
-        buttonPanel.add(updateStatusButton);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
     }
 
     public static JPanel getReportStatusPanel() {
+        return createDialogPanel("Open Report Status", () -> {
+            Window parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive()) {
+                    parent = window;
+                    break;
+                }
+            }
+            showReportStatusDialog(parent);
+        });
+    }
+
+    public static void showReportStatusDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Report Status", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(Color.WHITE);
+
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("Report Status");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
         // Use database-connected table model
         DatabaseTableModel complaintTableModel = DatabaseTableModel.getComplaintTableModel();
         JTable table = new JTable(complaintTableModel);
 
-        // Register table for auto-refresh
+        // Simple table configuration
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
+
+        // Register table for data management
         TableRefreshManager.getInstance().registerTable("complaints", table, complaintTableModel);
+        JPanelDataManager.getInstance().registerPanel("report_status", mainPanel, complaintTableModel, table);
+
         JScrollPane scrollPane = new JScrollPane(table);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        JButton changeStatusButton = createStyledButton("Change Status");
-        JButton assignButton = createStyledButton("Assign To");
-        JButton viewDetailsButton = createStyledButton("View Details");
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("report_status");
+        });
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
 
-        changeStatusButton.addActionListener(e -> showChangeStatusDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        assignButton.addActionListener(e -> showAssignComplaintDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        viewDetailsButton.addActionListener(e -> showViewComplaintDetailsDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
+        // Ensure data is loaded
+        SwingUtilities.invokeLater(() -> {
+            JPanelDataManager.getInstance().ensurePanelDataLoaded("report_status");
+        });
 
-        buttonPanel.add(viewDetailsButton);
-        buttonPanel.add(assignButton);
-        buttonPanel.add(changeStatusButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
     }
 
     public static JPanel getLaboratoryUsageReportPanel() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("Laboratory Usage Reports");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Use database-connected table model for lab reservations
-        DatabaseTableModel tableModel = DatabaseTableModel.getLabReservationTableModel();
-        JTable table = new JTable(tableModel);
-
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("lab_reservations", table, tableModel);
-
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
-        JScrollPane scrollPane = new JScrollPane(table);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-
-        // Force refresh data after UI is created to ensure visibility
-        SwingUtilities.invokeLater(() -> {
-            System.out.println("🔄 Force refreshing lab reservation data for UI display...");
-            tableModel.forceRefresh();
+        return createDialogPanel("Open Laboratory Usage Reports", () -> {
+            Window parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive()) {
+                    parent = window;
+                    break;
+                }
+            }
+            showLaboratoryUsageReportDialog(parent);
         });
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        JButton exportButton = createStyledButton("Export to PDF");
-        JButton printButton = createStyledButton("Print Report");
-        exportButton.addActionListener(e -> JOptionPane.showMessageDialog(mainPanel, "Exported to PDF"));
-        printButton.addActionListener(e -> JOptionPane.showMessageDialog(mainPanel, "Report sent to printer"));
-        buttonPanel.add(exportButton);
-        buttonPanel.add(printButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
     }
 
     public static JPanel getSoftwareInventoryPanel() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("Software Inventory");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Use database-connected table model for software inventory
-        DatabaseTableModel tableModel = DatabaseTableModel.getSoftwareInventoryTableModel();
-        JTable table = new JTable(tableModel);
-
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("software", table, tableModel);
-
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
-        JScrollPane scrollPane = new JScrollPane(table);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        JButton addButton = createStyledButton("Add Software");
-        JButton editButton = createStyledButton("Edit");
-        JButton deleteButton = createStyledButton("Delete");
-        addButton.addActionListener(e -> showAddSoftwareInventoryDialog(SwingUtilities.getWindowAncestor(mainPanel)));
-        editButton.addActionListener(e -> showEditSoftwareDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        deleteButton.addActionListener(e -> showDeleteSoftwareDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
+        return createDialogPanel("Open Software Inventory", () -> {
+            Frame parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive() && window instanceof Frame) {
+                    parent = (Frame) window;
+                    break;
+                }
+            }
+            showSoftwareInventoryDialog(parent);
+        });
     }
 
     public static JPanel getLaboratoryManagementPanel() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("Laboratory Management");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Use database-connected table model for labs
-        DatabaseTableModel tableModel = DatabaseTableModel.getLabTableModel();
-        JTable table = new JTable(tableModel);
-
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("labs", table, tableModel);
-
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
-        JScrollPane scrollPane = new JScrollPane(table);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        JButton addButton = createStyledButton("Add Laboratory");
-        JButton editButton = createStyledButton("Edit");
-        JButton maintenanceButton = createStyledButton("Schedule Maintenance");
-        addButton.addActionListener(e -> showAddLaboratoryDialog(SwingUtilities.getWindowAncestor(mainPanel)));
-        editButton.addActionListener(e -> showEditLaboratoryDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        maintenanceButton.addActionListener(e -> showScheduleMaintenanceDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(maintenanceButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
+        return createDialogPanel("Open Laboratory Management", () -> {
+            Frame parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive() && window instanceof Frame) {
+                    parent = (Frame) window;
+                    break;
+                }
+            }
+            showLaboratoryManagementDialog(parent);
+        });
     }
 
     public static JPanel getInstallationRequestsPanel() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("Software Installation Requests");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Create database-connected table model
-        DatabaseTableModel tableModel = DatabaseTableModel.getSoftwareRequestTableModel();
-        JTable table = new JTable(tableModel);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
-
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("software_requests", table, tableModel);
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-
-        JButton refreshButton = createStyledButton("Refresh");
-        refreshButton.addActionListener(e -> {
-            tableModel.refreshData();
-            JOptionPane.showMessageDialog(mainPanel, "Software requests refreshed!", "Success", JOptionPane.INFORMATION_MESSAGE);
-        });
-
-        JButton approveButton = createStyledButton("Approve");
-        JButton rejectButton = createStyledButton("Reject");
-        JButton viewButton = createStyledButton("View Details");
-        approveButton.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                String requestId = table.getValueAt(selectedRow, 0).toString();
-                String computerId = table.getValueAt(selectedRow, 1).toString();
-                String softwareName = table.getValueAt(selectedRow, 2).toString();
-                showApproveRequestDialog(SwingUtilities.getWindowAncestor(mainPanel), requestId, computerId, softwareName);
-            } else {
-                JOptionPane.showMessageDialog(mainPanel, "Please select a request to approve.");
+        return createDialogPanel("Open Installation Requests", () -> {
+            Frame parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive() && window instanceof Frame) {
+                    parent = (Frame) window;
+                    break;
+                }
             }
+            showInstallationRequestsDialog(parent);
         });
-
-        rejectButton.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                String requestId = table.getValueAt(selectedRow, 0).toString();
-                String computerId = table.getValueAt(selectedRow, 1).toString();
-                String softwareName = table.getValueAt(selectedRow, 2).toString();
-                showRejectRequestDialog(SwingUtilities.getWindowAncestor(mainPanel), requestId, computerId, softwareName);
-            } else {
-                JOptionPane.showMessageDialog(mainPanel, "Please select a request to reject.");
-            }
-        });
-        viewButton.addActionListener(e -> showViewSoftwareDetailsDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        buttonPanel.add(refreshButton);
-        buttonPanel.add(viewButton);
-        buttonPanel.add(approveButton);
-        buttonPanel.add(rejectButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
     }
 
     public static JPanel getUserAccessControlPanel() {
+        return createDialogPanel("Open User Access Control", () -> {
+            Frame parent = null;
+            for (Window window : Window.getWindows()) {
+                if (window.isActive() && window instanceof Frame) {
+                    parent = (Frame) window;
+                    break;
+                }
+            }
+            showUserAccessControlDialog(parent);
+        });
+    }
+
+    // Dialog implementations
+    public static void showLaboratoryUsageReportDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Laboratory Usage Reports", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("User Access Control");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
 
-        // Use database-connected table model for user access
-        DatabaseTableModel tableModel = DatabaseTableModel.getUserAccessTableModel();
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Laboratory Usage Reports");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Use database-connected table model
+        DatabaseTableModel tableModel = DatabaseTableModel.getLabReservationTableModel();
         JTable table = new JTable(tableModel);
 
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("user_access", table, tableModel);
-
+        // Simple table configuration
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
+
+        // Register table for data management
+        TableRefreshManager.getInstance().registerTable("lab_reservations", table, tableModel);
+        JPanelDataManager.getInstance().registerPanel("lab_usage_report", mainPanel, tableModel, table);
+
         JScrollPane scrollPane = new JScrollPane(table);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        JButton addButton = createStyledButton("Add User");
-        JButton editButton = createStyledButton("Edit Access");
-        JButton deactivateButton = createStyledButton("Deactivate");
-        JButton manageUsersButton = createStyledButton("Manage Users");
-        addButton.addActionListener(e -> showAddUserDialog(SwingUtilities.getWindowAncestor(mainPanel)));
-        editButton.addActionListener(e -> showEditUserAccessDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        deactivateButton.addActionListener(e -> showDeactivateUserDialog(SwingUtilities.getWindowAncestor(mainPanel), table));
-        manageUsersButton.addActionListener(e -> showUserManagementDialog(SwingUtilities.getWindowAncestor(mainPanel)));
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deactivateButton);
-        buttonPanel.add(manageUsersButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        return mainPanel;
+
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("lab_usage_report");
+        });
+        actionPanel.add(refreshButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
+        SwingUtilities.invokeLater(() -> {
+            JPanelDataManager.getInstance().ensurePanelDataLoaded("lab_usage_report");
+        });
+
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
     }
+
+
+
+
 
     public static void showAddUserDialog(Window parent) {
         JDialog dialog = new JDialog((Frame) parent, "Add User", true);
@@ -3735,59 +3737,83 @@ public class DialogComponents {
     }
 
     public static JPanel getInventoryReportPanel() {
+        // Create a simple panel with a button to open the dialog
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(Color.WHITE);
 
-        JLabel titleLabel = new JLabel("Inventory Reports");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(41, 128, 185));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        JPanel centerPanel = new JPanel(new FlowLayout());
+        centerPanel.setBackground(Color.WHITE);
 
-        // Use database-connected table model for computer inventory
+        JButton openDialogButton = createStyledButton("Open Inventory Reports");
+        openDialogButton.setPreferredSize(new Dimension(200, 40));
+        openDialogButton.addActionListener(e -> {
+            showInventoryReportDialog(SwingUtilities.getWindowAncestor(mainPanel));
+        });
+
+        centerPanel.add(openDialogButton);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+
+        return mainPanel;
+    }
+
+    public static void showInventoryReportDialog(Window parent) {
+        JDialog dialog = new JDialog((Frame) parent, "Inventory Reports", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Inventory Reports");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Use database-connected table model
         DatabaseTableModel tableModel = DatabaseTableModel.getComputerTableModel();
         JTable table = new JTable(tableModel);
 
-        // Register table for automatic refresh
-        TableRefreshManager.getInstance().registerTable("computers", table, tableModel);
-
+        // Simple table configuration
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(30);
+        table.setRowHeight(25);
         table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
+
+        // Register table for data management
+        TableRefreshManager.getInstance().registerTable("computers", table, tableModel);
+        JPanelDataManager.getInstance().registerPanel("inventory_report", mainPanel, tableModel, table);
+
         JScrollPane scrollPane = new JScrollPane(table);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Force refresh data after UI is created to ensure visibility
-        SwingUtilities.invokeLater(() -> {
-            System.out.println("🔄 Force refreshing inventory report data for UI display...");
-            tableModel.forceRefresh();
-        });
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
         JButton refreshButton = createStyledButton("Refresh");
         refreshButton.addActionListener(e -> {
-            tableModel.refreshData();
-            JOptionPane.showMessageDialog(mainPanel, "Inventory data refreshed successfully!",
-                "Success", JOptionPane.INFORMATION_MESSAGE);
+            JPanelDataManager.getInstance().refreshPanel("inventory_report");
+        });
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
+        SwingUtilities.invokeLater(() -> {
+            JPanelDataManager.getInstance().ensurePanelDataLoaded("inventory_report");
         });
 
-        JButton exportButton = createStyledButton("Export to PDF");
-        JButton printButton = createStyledButton("Print Report");
-
-        exportButton.addActionListener(e -> JOptionPane.showMessageDialog(mainPanel,
-            "Export functionality - would export " + tableModel.getRowCount() + " inventory items to PDF"));
-        printButton.addActionListener(e -> JOptionPane.showMessageDialog(mainPanel,
-            "Print functionality - would print " + tableModel.getRowCount() + " inventory items"));
-
-        buttonPanel.add(refreshButton);
-        buttonPanel.add(exportButton);
-        buttonPanel.add(printButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        return mainPanel;
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
     }
 
     /**
@@ -4625,5 +4651,65 @@ public class DialogComponents {
                     "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    // Installation Requests Dialog (new method)
+    public static void showInstallationRequestsDialog(Frame parent) {
+        JDialog dialog = new JDialog(parent, "Installation Requests", true);
+        dialog.setSize(900, 600);
+        dialog.setLayout(new BorderLayout());
+        styleDialog(dialog);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        mainPanel.setBackground(Color.WHITE);
+
+        // Simple title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("Installation Requests");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(41, 128, 185));
+        titlePanel.add(titleLabel);
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+
+        // Use database-connected table model
+        DatabaseTableModel tableModel = DatabaseTableModel.getSoftwareRequestTableModel();
+        JTable table = new JTable(tableModel);
+
+        // Simple table configuration
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setRowHeight(25);
+        table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
+
+        // Register table for data management
+        TableRefreshManager.getInstance().registerTable("software_requests", table, tableModel);
+        JPanelDataManager.getInstance().registerPanel("installation_requests", mainPanel, tableModel, table);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Simple action panel
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setBackground(Color.WHITE);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.addActionListener(e -> {
+            JPanelDataManager.getInstance().refreshPanel("installation_requests");
+        });
+        JButton closeButton = createStyledButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        actionPanel.add(refreshButton);
+        actionPanel.add(closeButton);
+        mainPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        // Ensure data is loaded
+        SwingUtilities.invokeLater(() -> {
+            JPanelDataManager.getInstance().ensurePanelDataLoaded("installation_requests");
+        });
+
+        dialog.add(mainPanel);
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
     }
 }
